@@ -16,7 +16,9 @@ Example:
 """
 
 import csv
+import json
 import math
+
 
 DATASET_DIRECTORY = './data/'
 DATA_INTERVAL = 37
@@ -73,6 +75,11 @@ with open(DATASET_DIRECTORY + 'output-comma-wide.csv') as csv_file:
 print(metric_list)
 print(len(metric_list))
 
-import pickle
-with open('financial_statements.pickle', 'wb') as f:
-    pickle.dump(master_list, f)
+
+with open('financial_statements.json', 'w') as f:
+    json.dump(master_list, f)
+
+
+# import pickle
+# with open('financial_statements.pickle', 'wb') as f:
+#     pickle.dump(master_list, f)
