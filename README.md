@@ -65,6 +65,7 @@ Z score papers and links
 To find more companies that are bankrupt, can consider
 - Searching for Insolvent ones as well
 - Other links:
+    - https://graphics.wsj.com/table/DebtorNames
     - http://www.bankruptcydata.com/p/bankruptcy-data-free-trial
     - https://www.macroaxis.com/invest/ratio/HDSN--Probability-Of-Bankruptcy
     - https://clark.com/shopping-retail/retailers-on-bankruptcy-watch-for-2018/
