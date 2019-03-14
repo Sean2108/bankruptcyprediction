@@ -8,8 +8,12 @@ from tensorflow import set_random_seed
 from keras.models import Sequential
 from keras.layers import Dense, LSTM
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_curve
+from sklearn.metrics import auc
+from sklearn.metrics import confusion_matrix
 from scipy.io import arff
 import numpy as np
+import matplotlib.pyplot as plt
 import pickle
 import pandas as pd
 
@@ -53,23 +57,34 @@ for i in range(nb_samples):
 # Create model
 BDmodel = Sequential()
 BDmodel.add(LSTM(128, input_shape=(look_back,num_features), return_sequences = True))
-BDmodel.add(LSTM(64, input_shape=(look_back,num_features)))
+BDmodel.add(LSTM(64, input_shape=(look_back,num_features), return_sequences = True))
+BDmodel.add(LSTM(32, input_shape=(look_back,num_features), return_sequences = True))
+BDmodel.add(LSTM(16, input_shape=(look_back,num_features)))
 BDmodel.add(Dense(1, activation = 'sigmoid'))
-BDmodel.compile(optimizer = 'rmsprop', loss = 'mse', metrics=['accuracy'])
+BDmodel.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics=['accuracy'])
 BDmodel.fit(x_train_reshaped, y_train_reshaped, batch_size = 32, validation_split= 0.3, epochs = 100)
 print(BDmodel.summary())
 
-# Test model
-BDmodelpredict_train = BDmodel.predict_classes(x_train_reshaped)
-BDmodelpredict_test = BDmodel.predict_classes(x_test_reshaped)
-
-scores = BDmodel.evaluate(x_train_reshaped, y_train_reshaped)
+# Evaluate model and predict data
+scores = BDmodel.evaluate(x_test_reshaped, y_test_reshaped)
 print("BDmodel: \n%s: %.2f%%" % (BDmodel.metrics_names[1], scores[1]*100))
 
+y_predict = BDmodel.predict_classes(x_test_reshaped)
+cm = confusion_matrix(y_test_reshaped, y_predict)
 
-simfin_data = pd.read_pickle("./data_with_ratios.pickle")
-simfin_df = pd.DataFrame(simfin_data[0])
+'''
+fpr_BDmodel, tpr_BDmodel, thresholds_BDmodel = roc_curve(y_test_reshaped, y_predict)
+auc_BDmodel = auc(fpr_BDmodel, tpr_BDmodel)
 
+plt.figure(1)
+plt.plot([0, 1], [0, 1], 'k--')
+plt.plot(fpr_BDmodel, tpr_BDmodel, label='BDmodel (area = {:.3f})'.format(auc_BDmodel))
+plt.xlabel('False positive rate')
+plt.ylabel('True positive rate')
+plt.title('ROC curve')
+plt.legend(loc='best')
+plt.show()
+'''
 
 '''
 simfin_data = pd.read_pickle("./data_with_ratios.pickle")
