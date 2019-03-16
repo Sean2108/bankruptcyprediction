@@ -6,7 +6,7 @@ Remember to add the datasets into the ./data/ folder. Or change the directory wr
 
 ## Problem Statement
 
-Using AI and deep learing on big data to perform financial evaluation of firms, with a focus on Bankruptcy Prediction.
+Using AI and deep learning to perform financial evaluation of firms (with a focus on Bankruptcy Prediction) via big data.
 
 With increasing instability and unpredictability in the financial markets, companies can see their value rise to unpredecented heights on a good day and plummet rapidly in bad ones. Not many firms will be able to survive such turbulent changes and many companies have found themselves getting into cash flow problems. For instance, many firms in the retail industry had to file for bankruptcy in 2018. With more turbulent times expected due to factors like the disruptions brought about by AI, geopolitical tensions, an ailing Chinese economy, Brexit and US-China trade wars, bankruptcy prediction will become increasing important.  
 
