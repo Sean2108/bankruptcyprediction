@@ -2,13 +2,11 @@
 
 ## Running the code
 
-Remember to add the datasets into the ./data/ folder. Or change the directory written in the code. 
+Remember to add the datasets into the ./data/ folder. Or change the directory written in the code.
 
 ## Problem Statement
 
 Using AI and deep learning to perform financial evaluation of firms (with a focus on Bankruptcy Prediction) via big data.
-
-With increasing instability and unpredictability in the financial markets, companies can see their value rise to unpredecented heights on a good day and plummet rapidly in bad ones. Not many firms will be able to survive such turbulent changes and many companies have found themselves getting into cash flow problems. For instance, many firms in the retail industry had to file for bankruptcy in 2018. With more turbulent times expected due to factors like the disruptions brought about by AI, geopolitical tensions, an ailing Chinese economy, Brexit and US-China trade wars, bankruptcy prediction will become increasing important.  
 
 ## Dataset 
 
@@ -16,11 +14,21 @@ Our main dataset is obtained from [SimFin](https://simfin.com/)
 - 2165 companies 
     - List of company names can be found in `listofcompanies.txt'
         - `Mylan N.V.` is duplicated
-    - Out of these, 46 companies are bankrupt / had prior history of bankruptcy, either in its subsidaries or the company as a whole
+    - Out of these, 49 companies are bankrupt / had prior history of bankruptcy, either in its subsidaries or the company as a whole
 - 10 years of data ranging from 1/1/09 to 11/1/19
 
 
 ## Approach
+
+Model: LSTM, (RNN), GRU
+Over/under sampling 
+Layers
+Nodes in each layer
+Learning algorithm 
+Dropout
+Learning rate
+Loss function: binary cross-entropy, self-defined (specificity loss)
+Reduce features
 
 1. Find the best financial ratios to use as features for a LSTM model to predict bankruptcy 
     - If LSTM has too many parameters, can consider GRU 
