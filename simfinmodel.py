@@ -11,18 +11,19 @@ seed(700)
 
 from tensorflow import set_random_seed
 set_random_seed(700)
-# tf.compat.v1.set_random_seed
+# tf.compat.v1.set_random_seed(700)
 
 import pickle
 from matplotlib import pyplot as plt
 
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, GRU, SimpleRNN, Dropout
+from keras import optimizers
+from keras.callbacks import EarlyStopping
+
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import roc_curve, auc, confusion_matrix
 from sklearn.model_selection import train_test_split
-from keras import optimizers
-
 
 # %matplotlib inline
 
@@ -48,6 +49,8 @@ DROPOUT = 0.2
 NUM_LSTM_LAYERS = 4
 LEARNING_RATE = 0.003
 
+MODEL_TO_RUN = 'gru' # must be in small letters 
+
 # lstm, gru
 # 42 - 60, 100
 # 100 - 73, 67
@@ -62,7 +65,7 @@ LEARNING_RATE = 0.003
 def intersection(lst1, lst2): 
     return list(set(lst1) & set(lst2)) 
 
-def train_model(x_train, y_train, units, dropout, num_lstm_layers, model_type, epoch, batch_size):
+def train_model(x_train, y_train, units, dropout, num_lstm_layers, model_type, epoch, batch_size, x_test, y_test):
     model = Sequential(
         [
             LSTM(units, return_sequences=True, input_shape=(x_train.shape[1], x_train.shape[2])) if model_type == 'lstm' 
@@ -83,9 +86,16 @@ def train_model(x_train, y_train, units, dropout, num_lstm_layers, model_type, e
             Dropout(dropout),
             Dense(1, activation = 'sigmoid')
         ])
-    model.compile(optimizer=optimizers.RMSprop(lr=LEARNING_RATE),loss='binary_crossentropy', metrics=['accuracy'])
-    history = model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, verbose=0)
-    return model, history
+
+    callbacks = [EarlyStopping(monitor='val_loss', patience=10)]
+    
+    model.compile(optimizer=optimizers.RMSprop(lr=LEARNING_RATE),loss='binary_crossentropy', metrics=['accuracy']) # SGD
+    history = model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, verbose=1, callbacks=callbacks, validation_data=(x_test, y_test))
+
+    early_stopping_epoch = callbacks[0].stopped_epoch - 10 + 1 # keras gives the 0-index value of the epoch, so +1. -5 because of patience?
+    print('Early stopping epoch: ' + str(early_stopping_epoch))
+
+    return model, history, early_stopping_epoch
 
 def plot_loss(history):
     plt.plot(history.history['loss'])
@@ -186,83 +196,96 @@ for obj in data:
 
 # Data Prep
 
-results_test = []
-results_ground_truth = []
+continue_flag = True
 
-for ix in range(3):
+while continue_flag:
 
-    arr = np.array(new_data)
-    test_arr = np.array(ground_truth)
-    print("Dataset Dimensions" + str(arr.shape))
+    results_test = []
+    results_ground_truth = []
+    early_stopping_epoch_list = []
 
-    scalers = {}
-    for i in range(arr.shape[2]):
-        scalers[i] = MinMaxScaler(feature_range=(0,1))
-        arr[:, :, i] = scalers[i].fit_transform(arr[:, :, i])
-        test_arr[:, :, i] = scalers[i].transform(test_arr[:, :, i])
+    for ix in range(10):
 
-    x_train, x_test, y_train, y_test = train_test_split(arr, bankrupt, test_size=0.15, random_state=42)
+        arr = np.array(new_data)
+        test_arr = np.array(ground_truth)
+        print("Dataset Dimensions" + str(arr.shape))
 
-    print('bankrupt:' + str(len([True for b in bankrupt if b])))
-    print('not bankrupt:' + str(len([True for b in bankrupt if not b])))
+        scalers = {}
+        for i in range(arr.shape[2]):
+            scalers[i] = MinMaxScaler(feature_range=(0,1))
+            arr[:, :, i] = scalers[i].fit_transform(arr[:, :, i])
+            test_arr[:, :, i] = scalers[i].transform(test_arr[:, :, i])
 
-    # Train model
+        x_train, x_test, y_train, y_test = train_test_split(arr, bankrupt, test_size=0.15, random_state=42)
 
-    lstm_model, lstm_history = train_model(x_train, y_train, LSTM_UNITS, DROPOUT, NUM_LSTM_LAYERS, 'gru', EPOCH, BATCH_SIZE)
-    # plot_loss(lstm_history)
+        print('bankrupt:' + str(len([True for b in bankrupt if b])))
+        print('not bankrupt:' + str(len([True for b in bankrupt if not b])))
 
-    
-    # Evaluate model and predict data on TEST 
-    print("******Evaluating TEST set*********")
+        # Train model
 
-    scores = lstm_model.evaluate(x_test, y_test)
-    print("model: \n%s: %.2f%%" % (lstm_model.metrics_names[1], scores[1]*100))
-    results_test.append(scores[1]*100)
+        lstm_model, lstm_history, early_stopping_epoch = train_model(x_train, y_train, LSTM_UNITS, DROPOUT, NUM_LSTM_LAYERS, MODEL_TO_RUN, EPOCH, BATCH_SIZE, x_test, y_test)
+        # plot_loss(lstm_history)
+        early_stopping_epoch_list.append(early_stopping_epoch)
+        
+        # Evaluate model and predict data on TEST 
+        print("******Evaluating TEST set*********")
 
-    y_predict = lstm_model.predict_classes(x_test)
-    cm = confusion_matrix(y_test, y_predict)
-    print(cm)
+        scores = lstm_model.evaluate(x_test, y_test)
+        print("model: \n%s: %.2f%%" % (lstm_model.metrics_names[1], scores[1]*100))
+        results_test.append(scores[1]*100)
 
-    try:
-        tn, fp, fn, tp = cm.ravel()
-        print(tn, fp, fn, tp)
-    except ValueError:
-        print("100% accuracy, no CM to print")
+        y_predict = lstm_model.predict_classes(x_test)
+        cm = confusion_matrix(y_test, y_predict)
+        print(cm)
 
-    fpr_BDmodel, tpr_BDmodel, thresholds_BDmodel = roc_curve(y_test, y_predict)
-    auc_BDmodel = auc(fpr_BDmodel, tpr_BDmodel)
-    print("AUC: " + str(auc_BDmodel))
+        try:
+            tn, fp, fn, tp = cm.ravel()
+            print(tn, fp, fn, tp)
+        except ValueError:
+            print("100% accuracy, no CM to print")
+
+        fpr_BDmodel, tpr_BDmodel, thresholds_BDmodel = roc_curve(y_test, y_predict)
+        auc_BDmodel = auc(fpr_BDmodel, tpr_BDmodel)
+        print("AUC: " + str(auc_BDmodel))
 
 
-    # Evaluate model and predict data on GROUND TRUTH
-    print("******Evaluating GROUND TRUTH*********")
-    scores = lstm_model.evaluate(test_arr, ground_bankrupt)
-    print("model: \n%s: %.2f%%" % (lstm_model.metrics_names[1], scores[1]*100))
-    results_ground_truth.append(scores[1]*100)
+        # Evaluate model and predict data on GROUND TRUTH
+        print("******Evaluating GROUND TRUTH*********")
+        scores = lstm_model.evaluate(test_arr, ground_bankrupt)
+        print("model: \n%s: %.2f%%" % (lstm_model.metrics_names[1], scores[1]*100))
+        results_ground_truth.append(scores[1]*100)
 
-    y_predict = lstm_model.predict_classes(test_arr)
-    cm = confusion_matrix(ground_bankrupt, y_predict)
-    print(cm)
-    
-    try:
-        tn, fp, fn, tp = cm.ravel()
-        print(tn, fp, fn, tp)
-    except ValueError:
-        print("100% accuracy, no CM to print")
+        y_predict = lstm_model.predict_classes(test_arr)
+        cm = confusion_matrix(ground_bankrupt, y_predict)
+        print(cm)
+        
+        try:
+            tn, fp, fn, tp = cm.ravel()
+            print(tn, fp, fn, tp)
+        except ValueError:
+            print("100% accuracy, no CM to print")
 
-    from keras import backend
-    backend.clear_session()
-    
-    print(str(ix) + ' done!')
+        from keras import backend
+        backend.clear_session()
+        
+        print(str(ix) + ' done!')
+        print(results_test)
+        print(results_ground_truth)
+
+    import statistics
+
     print(results_test)
+    print("Average test accuracy: " + str(statistics.mean(results_test)))
+    print("Average test stdev: " + str(statistics.stdev(results_test)))
+
+    with open('results_test' + MODEL_TO_RUN + '.csv', 'a') as out_stream:
+        out_stream.write(str(statistics.mean(results_test)) + ', ' + str(statistics.stdev(results_test)) + ', ' + str(results_test) + ', ' + str(early_stopping_epoch_list) + '\n')
+
     print(results_ground_truth)
+    print("Average ground truth accuracy: " + str(statistics.mean(results_ground_truth)))
+    print("Average ground stdev: " + str(statistics.stdev(results_ground_truth)))
 
-import statistics
+    with open('results_ground_truth' + MODEL_TO_RUN + '.csv', 'a') as out_stream:
+        out_stream.write(str(statistics.mean(results_ground_truth)) + ', ' + str(statistics.stdev(results_ground_truth)) + ', ' + str(results_ground_truth) + ', ' + str(early_stopping_epoch_list) + '\n')
 
-print(results_test)
-print("Average test accuracy: " + str(statistics.mean(results_test)))
-print("Average test stdev: " + str(statistics.stdev(results_test)))
-
-print(results_ground_truth)
-print("Average ground truth accuracy: " + str(statistics.mean(results_ground_truth)))
-print("Average ground stdev: " + str(statistics.stdev(results_ground_truth)))
+    continue_flag = False
