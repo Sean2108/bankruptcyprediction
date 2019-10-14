@@ -48,16 +48,16 @@ plt.rcParams.update(params)
 MIN_ROWS = 5
 ZSCORE = 1.8
 
-EPOCH = 100
+EPOCH = 200
 BATCH_SIZE = 8
 LSTM_UNITS = 60
 DROPOUT = 0.2
 NUM_LSTM_LAYERS = 4
-LEARNING_RATE = 0.0005 # 0.001
+LEARNING_RATE = 0.001 # 0.001
 
 PATIENCE = 10
 
-MODEL_TO_RUN = 'gru' # must be in small letters 
+MODEL_TO_RUN = 'lstm' # must be in small letters 
 
 # lstm, gru
 # 42 - 60, 100
@@ -233,11 +233,12 @@ while continue_flag:
         callbacks = [EarlyStopping(monitor='val_loss', patience=PATIENCE)]
     
         lstm_model.compile(optimizer=optimizers.Adam(lr=LEARNING_RATE),loss='binary_crossentropy', metrics=['accuracy'])
-        history = lstm_model.fit(x_train, y_train, epochs=EPOCH, batch_size=BATCH_SIZE, verbose=1, callbacks=callbacks, validation_data=(x_test, y_test))
+        history = lstm_model.fit(x_train, y_train, epochs=EPOCH, batch_size=BATCH_SIZE, verbose=0, callbacks=callbacks, validation_data=(x_test, y_test))
 
         early_stopping_epoch = callbacks[0].stopped_epoch - PATIENCE + 1 # keras gives the 0-index value of the epoch, so +1. -5 because of patience?
         print('Early stopping epoch: ' + str(early_stopping_epoch))
-
+        if early_stopping_epoch < 0:
+            early_stopping_epoch = 100
         
         # Evaluate model and predict data on TEST 
         print("******Evaluating TEST set*********")
