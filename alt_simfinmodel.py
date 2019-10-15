@@ -57,7 +57,7 @@ LEARNING_RATE = 0.001 # 0.001
 
 PATIENCE = 10
 
-MODEL_TO_RUN = 'lstm' # must be in small letters 
+MODEL_TO_RUN = 'gru' # must be in small letters 
 
 # lstm, gru
 # 42 - 60, 100
@@ -95,9 +95,7 @@ def train_model(x_train, y_train, units, dropout, num_lstm_layers, model_type):
             Dense(1, activation = 'sigmoid')
         ])
 
-
-
-    return model#, history
+    return model
 
 def plot_loss(history):
     plt.plot(history.history['loss'])
